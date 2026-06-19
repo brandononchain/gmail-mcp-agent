@@ -1,0 +1,12 @@
+Hi {{ first_name }},
+
+Great to hear from you!
+
+[ Replace this with your next step — a scheduling link, a few time options, or
+  whatever you want an interested lead to do next. ]
+
+Looking forward to connecting and showing you how this can help {{ company }}.
+
+Best,
+{{ sender_name }}
+{{ company_name }}

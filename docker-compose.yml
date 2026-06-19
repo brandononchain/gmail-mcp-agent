@@ -16,6 +16,7 @@ services:
       - ./credentials.json:/app/credentials.json:ro
       - ./contacts.csv:/app/contacts.csv:ro
       - ./body.txt:/app/body.txt:ro
+      - ./templates:/app/templates:ro
       - ./nurturing_config.json:/app/nurturing_config.json:rw
       - ./lead_tracking.json:/app/lead_tracking.json:rw
       - ./logs:/app/logs:rw

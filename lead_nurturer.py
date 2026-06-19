@@ -1,7 +1,11 @@
 #!/usr/bin/env python3
 """
-Advanced Lead Nurturing System for Gmail CSV Sender
-Handles automated follow-ups, response tracking, and lead scoring
+Lead Nurturing System for the Gmail MCP Agent.
+
+Handles automated follow-ups, response tracking, and lead scoring. All
+campaign-specific content (sender identity, subjects, email copy, contact list)
+is loaded from configuration and the ``templates/`` directory so the agent stays
+generic and plug-and-play.
 """
 
 import csv
@@ -35,11 +39,13 @@ class Lead:
     notes: str = ""
 
 class LeadNurturer:
-    def __init__(self, credentials_path: str = "credentials.json", token_path: str = "token.json", service: Any = None):
+    def __init__(self, credentials_path: str = "credentials.json", token_path: str = "token.json",
+                 config_path: str = "nurturing_config.json", service: Any = None):
+        self.config_path = config_path
+        self.config = self._load_config()
         self.service = service or self._get_service(credentials_path, token_path)
         self.leads = self._load_leads()
         self.templates = self._load_templates()
-        self.config = self._load_config()
         self.sync_state = self._load_sync_state()
         
     def _get_service(self, credentials_path: str, token_path: str):
@@ -63,22 +69,28 @@ class LeadNurturer:
         return build("gmail", "v1", credentials=creds)
     
     def _load_leads(self) -> Dict[str, Lead]:
-        """Load leads from CSV and tracking file"""
+        """Load leads from the contacts CSV and tracking file"""
         leads = {}
-        
-        # Load from contacts.csv
+
+        contacts_file = self.config.get('contacts_file', 'contacts.csv')
+
+        # Load from the contacts CSV (only a `to` column is required;
+        # `first_name` and `company` are optional and used for personalization).
         try:
-            with open('contacts.csv', 'r', encoding='utf-8') as f:
+            with open(contacts_file, 'r', encoding='utf-8') as f:
                 reader = csv.DictReader(f)
                 for row in reader:
-                    email = row['to'].strip().lower()
+                    raw_email = (row.get('to') or row.get('email') or '').strip()
+                    if not raw_email:
+                        continue
+                    email = raw_email.lower()
                     leads[email] = Lead(
                         email=email,
-                        first_name=row['first_name'],
-                        company=row['company']
+                        first_name=(row.get('first_name') or '').strip(),
+                        company=(row.get('company') or '').strip(),
                     )
         except FileNotFoundError:
-            print("contacts.csv not found")
+            print(f"Contacts file not found: {contacts_file}")
         
         # Load tracking data
         try:
@@ -99,7 +111,7 @@ class LeadNurturer:
 
     def _load_config(self) -> Dict[str, Any]:
         try:
-            with open('nurturing_config.json', 'r') as f:
+            with open(self.config_path, 'r') as f:
                 return json.load(f)
         except Exception:
             return {}
@@ -137,77 +149,77 @@ class LeadNurturer:
         with open('lead_tracking.json', 'w') as f:
             json.dump(tracking_data, f, indent=2)
     
+    # Generic fallbacks used only when a template file is missing, so the agent
+    # always has something to send. Real copy lives in the ``templates/`` dir.
+    _DEFAULT_TEMPLATES = {
+        'initial': (
+            "Hi {{ first_name }},\n\n"
+            "I'm reaching out because I think {{ company }} could benefit from "
+            "what we're building.\n\n"
+            "Would you be open to a quick call this week?\n\n"
+            "Thanks,\n{{ sender_name }}\n{{ company_name }}"
+        ),
+        'followup_1': (
+            "Hi {{ first_name }},\n\n"
+            "Just following up on my previous note in case it slipped through.\n\n"
+            "Best,\n{{ sender_name }}\n{{ company_name }}"
+        ),
+        'followup_2': (
+            "Hi {{ first_name }},\n\n"
+            "This will be my last note for now — no pressure either way.\n\n"
+            "Best,\n{{ sender_name }}\n{{ company_name }}"
+        ),
+        'interested': (
+            "Hi {{ first_name }},\n\n"
+            "Great to hear from you! Let me know a time that works and I'll send "
+            "over the details.\n\n"
+            "Best,\n{{ sender_name }}\n{{ company_name }}"
+        ),
+    }
+
     def _load_templates(self) -> Dict[str, Template]:
-        """Load email templates for different scenarios"""
+        """Load email templates from the configured templates directory.
+
+        Each template type maps to a ``.txt`` file. Missing files fall back to a
+        built-in generic version so the system never breaks.
+        """
+        templates_dir = self.config.get('templates_dir', 'templates')
+        template_files = {
+            'initial': 'initial.txt',
+            'followup_1': 'followup_1.txt',
+            'followup_2': 'followup_2.txt',
+            'interested': 'interested.txt',
+        }
+
         templates = {}
-        
-        # Initial outreach template
-        templates['initial'] = Template("""
-Hi {{first_name}},
-
-Did you know many dental practices lose 20–30% of new patient inquiries because follow-ups slip through the cracks?
-
-We've built an AI agent that automatically follows up with every lead via SMS/email and books them straight into your calendar.
-
-Clients typically see 5–9 extra appointments in the first 30 days.
-
-Have time for 10-min demo call this week?
-
-Thank you,
-Brandon
-Quantra Labs
-        """.strip())
-        
-        # Follow-up 1 (3 days later)
-        templates['followup_1'] = Template("""
-Hi {{first_name}},
-
-Following up on my message about our AI lead follow-up system for dental practices.
-
-I know you're busy, but this could be a game-changer for {{company}}.
-
-Quick question: What's your biggest challenge with patient follow-ups right now?
-
-Best,
-Brandon
-Quantra Labs
-        """.strip())
-        
-        # Follow-up 2 (1 week later)
-        templates['followup_2'] = Template("""
-Hi {{first_name}},
-
-I understand you might not be ready to discuss this right now.
-
-Just wanted to share that Dr. Sarah Johnson at Smile Care Clinic increased her new patient bookings by 40% in the first month using our system.
-
-If you're interested in a quick 5-minute demo, just reply with "demo" and I'll send you a calendar link.
-
-No pressure - I'll stop following up after this.
-
-Best,
-Brandon
-Quantra Labs
-        """.strip())
-        
-        # Response to interest
-        templates['interested'] = Template("""
-Hi {{first_name}},
-
-Great to hear from you! 
-
-I'd love to show you how our AI system works. Here's a quick calendar link to book a 10-minute demo:
-
-[Calendar Link]
-
-Looking forward to showing you how this can help {{company}} capture more patients.
-
-Best,
-Brandon
-Quantra Labs
-        """.strip())
-        
+        for key, filename in template_files.items():
+            path = os.path.join(templates_dir, filename)
+            try:
+                with open(path, 'r', encoding='utf-8') as f:
+                    templates[key] = Template(f.read().strip())
+            except FileNotFoundError:
+                templates[key] = Template(self._DEFAULT_TEMPLATES[key])
         return templates
+
+    def _render(self, template: Template, lead: "Lead") -> str:
+        """Render a template with lead and sender context."""
+        return template.render(
+            first_name=lead.first_name,
+            company=lead.company,
+            email=lead.email,
+            sender_name=self.config.get('sender_name', ''),
+            company_name=self.config.get('company_name', ''),
+        )
+
+    def _subject(self, key: str, lead: "Lead", default: str) -> str:
+        """Resolve a configurable, templated subject line."""
+        subject_template = self.config.get('subjects', {}).get(key, default)
+        return Template(subject_template).render(
+            first_name=lead.first_name,
+            company=lead.company,
+            sender_name=self.config.get('sender_name', ''),
+            company_name=self.config.get('company_name', ''),
+        )
     
     def check_for_responses(self):
         """Check Gmail for responses to our outreach with pagination and idempotency"""
@@ -365,13 +377,10 @@ Quantra Labs
         """Send automated response based on template type"""
         lead = self.leads[email]
         template = self.templates[template_type]
-        
-        subject = "Re: AI Lead Follow-up System for Dental Practices"
-        body = template.render(
-            first_name=lead.first_name,
-            company=lead.company
-        )
-        
+
+        subject = self._subject(template_type, lead, default="Re: Thanks for getting back to me")
+        body = self._render(template, lead)
+
         # Send email (using existing send_message function)
         try:
             msg = EmailMessage()
@@ -423,13 +432,10 @@ Quantra Labs
         """Send follow-up email"""
         lead = self.leads[email]
         template = self.templates[template_type]
-        
-        subject = "Following up - AI Lead Follow-up System"
-        body = template.render(
-            first_name=lead.first_name,
-            company=lead.company
-        )
-        
+
+        subject = self._subject(template_type, lead, default="Following up")
+        body = self._render(template, lead)
+
         try:
             msg = EmailMessage()
             msg["To"] = email
@@ -492,7 +498,5 @@ Quantra Labs
         print("✅ Nurturing cycle complete!")
 
 if __name__ == "__main__":
-    import os
-    
     nurturer = LeadNurturer()
     nurturer.run_nurturing_cycle()

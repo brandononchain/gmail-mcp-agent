@@ -39,9 +39,16 @@ if [ ! -f "nurturing_config.json" ]; then
     echo "📝 Creating default nurturing_config.json..."
     cat > nurturing_config.json << EOF
 {
-  "sender_email": "brandon@quantralabs.com",
-  "sender_name": "Brandon",
-  "company_name": "Quantra Labs",
+  "sender_email": "",
+  "sender_name": "Your Name",
+  "company_name": "Your Company",
+  "contacts_file": "contacts.csv",
+  "templates_dir": "templates",
+  "subjects": {
+    "followup_1": "Following up, {{ first_name }}",
+    "followup_2": "One last note",
+    "interested": "Re: Great to hear from you"
+  },
   "follow_up_schedule": {
     "followup_1_days": 3,
     "followup_2_days": 7,

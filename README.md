@@ -1,291 +1,267 @@
-# 🤖 Gmail MCP Agent - 24/7 Lead Nurturing System
+# 📬 Gmail MCP Agent
 
-A comprehensive, enterprise-grade lead nurturing system that automates Gmail outreach campaigns with intelligent follow-ups, response tracking, and 24/7 operation via MCP (Model Context Protocol) server.
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+[![Python 3.11+](https://img.shields.io/badge/python-3.11%2B-blue.svg)](https://www.python.org/downloads/)
+[![MCP](https://img.shields.io/badge/Model_Context_Protocol-compatible-6E56CF.svg)](https://modelcontextprotocol.io/)
+[![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg)](#-contributing)
 
-## 🚀 Features
+An open-source, plug-and-play toolkit for running **personalized Gmail outreach
+and automated follow-ups** — controllable over the [Model Context
+Protocol](https://modelcontextprotocol.io/) (MCP) so you can drive it from any
+MCP-compatible client or run it as a 24/7 background service.
 
-### ✅ **Automated Lead Nurturing**
-- **24/7 Operation** - Runs continuously with Docker containerization
-- **Intelligent Follow-ups** - Automatic sequences at 3 days and 7 days
-- **Response Tracking** - Monitors Gmail for replies and categorizes them
-- **Lead Scoring** - Tracks engagement and interest levels
-- **Smart Responses** - Automatically responds to interested leads
+Everything that's specific to a campaign — sender identity, subject lines, email
+copy, and your contact list — lives in **config files and the `templates/`
+directory**. The code itself ships with no business, industry, or personal data
+baked in. Clone it, drop in your credentials, edit a few text files, and go.
 
-### 📊 **MCP Server Architecture**
-- **Remote Control** - Control system via MCP protocol
-- **Real-time Monitoring** - Live status and performance tracking
-- **Docker Deployment** - Production-ready containerization
-- **Health Checks** - Automatic recovery and error handling
-- **Scalable Design** - Ready for enterprise use
+> ⚠️ **Send responsibly.** Only email people who have agreed to hear from you,
+> honor unsubscribe/opt-out requests, respect Gmail's
+> [sending limits](https://support.google.com/a/answer/166852), and comply with
+> anti-spam laws (e.g. CAN-SPAM, GDPR, CASL) in your jurisdiction.
 
-### 🎯 **Email Campaign Management**
-- **CSV-based Lead Lists** - Easy contact management
-- **Template System** - Jinja2-powered email personalization
-- **Rate Limiting** - Respects Gmail API quotas
-- **Resume Capability** - Continue from where you left off
-- **Comprehensive Logging** - Complete audit trail
+## 📑 Contents
 
-## 📁 Project Structure
+- [Features](#-features)
+- [How it works](#-how-it-works)
+- [Project structure](#-project-structure)
+- [Quick start](#-quick-start)
+- [MCP server](#-mcp-server)
+- [Configuration reference](#️-configuration-reference)
+- [Deployment](#-deployment)
+- [Security & privacy](#-security--privacy)
+- [More docs](#-more-docs)
+- [Contributing](#-contributing)
+- [License](#-license)
+
+## ✨ Features
+
+- **CSV-driven outreach** — send templated, personalized emails to a contact list.
+- **Automated follow-up sequences** — configurable timing (default: day 3 and day 7).
+- **Response tracking** — incremental, idempotent Gmail sync detects replies.
+- **Keyword-based lead scoring** — categorize replies as interested / not interested.
+- **Auto-replies** — optionally respond to interested leads automatically.
+- **MCP server** — start/stop/monitor the agent from any MCP client.
+- **Runs anywhere** — locally, via Docker, or as a systemd service.
+
+## 🧭 How it works
 
 ```
-├── send_from_csv.py          # Main Gmail sender script
-├── lead_nurturer.py          # Automated nurturing system
-├── mcp_server.py             # 24/7 MCP server
-├── mcp_client.py             # Control interface
-├── lead_dashboard.py         # Monitoring dashboard
-├── run_nurturing.py          # Automation runner
-├── contacts.csv              # Lead database (96 dental practices)
-├── body.txt                  # Email template
-├── credentials.json          # Gmail API credentials
-├── nurturing_config.json     # System configuration
-├── gmail_sync_state.json     # Gmail incremental sync state (auto-created)
-├── requirements.txt          # Python dependencies
-├── Dockerfile               # Container configuration
-├── docker-compose.yml       # Deployment setup
-├── deploy.sh                # One-click deployment
-└── DEPLOYMENT_GUIDE.md      # Complete setup guide
+                    ┌──────────────────┐
+   MCP client  ───► │    mcp_server    │ ──► start / stop / status / report
+ (Claude, CLI)      └────────┬─────────┘
+                             │ drives
+                             ▼
+   contacts.csv ──► ┌──────────────────┐ ──► personalized emails ──┐
+   templates/   ──► │  lead_nurturer   │                           ▼
+   config       ──► └────────┬─────────┘                    ┌────────────┐
+                             │  reads replies, scores leads  │  Gmail API │
+                             └───────────────────────────────┤  (OAuth2)  │
+                                                             └────────────┘
 ```
 
-## 🛠️ Quick Start
+1. **Outreach** — `send_from_csv.py` sends your `body.txt` template to each row
+   in `contacts.csv`, rate-limited and logged.
+2. **Listen** — each cycle, `lead_nurturer.py` checks Gmail for replies
+   (incrementally, never reprocessing a message) and scores them against your
+   keywords.
+3. **Follow up** — leads who haven't replied get follow-ups on your schedule;
+   interested leads optionally get an auto-reply.
+4. **Control** — run it once, on a scheduler, or as an MCP server you drive from
+   any MCP client.
 
-### 1. **Clone and Setup**
+## 📁 Project structure
+
+```
+├── send_from_csv.py          # One-shot CSV email sender (initial outreach)
+├── lead_nurturer.py          # Follow-up sequences, response tracking, scoring
+├── mcp_server.py             # MCP server exposing control tools
+├── mcp_client.py             # Simple CLI client for the MCP server
+├── lead_dashboard.py         # Prints a status dashboard
+├── run_nurturing.py          # Standalone scheduler (no MCP needed)
+├── templates/                # Your email copy (Jinja2) — edit these
+│   ├── initial.txt
+│   ├── followup_1.txt
+│   ├── followup_2.txt
+│   └── interested.txt
+├── contacts.csv              # Sample contact list — replace with your own
+├── body.txt                  # Body template for send_from_csv.py
+├── nurturing_config.json     # Sender identity, schedule, scoring, automation
+├── credentials.example.json  # Template for your Gmail OAuth client
+├── env.example               # Template for environment variables
+├── Dockerfile / docker-compose.yml / deploy.sh
+└── gmail-mcp-agent.service   # systemd unit template
+```
+
+Files generated at runtime (git-ignored): `token.json`, `lead_tracking.json`,
+`gmail_sync_state.json`, `send_log.csv`, `mcp_server.log`.
+
+## 🚀 Quick start
+
+**Prerequisites:** Python 3.11+, a Google account, and (optionally) Docker.
+
+### 1. Install
+
 ```bash
 git clone https://github.com/brandononchain/GMAIL-MCP-Agent.git
 cd GMAIL-MCP-Agent
 pip install -r requirements.txt
 ```
 
-### 2. **Configure Gmail API**
-- Get OAuth2 credentials from Google Cloud Console
-- Save as `credentials.json`
-- Update sender email in `nurturing_config.json`
+### 2. Get Gmail API credentials
 
-### 3. **Deploy 24/7 System**
+1. Open the [Google Cloud Console](https://console.cloud.google.com/) and create
+   (or select) a project.
+2. Enable the **Gmail API**.
+3. Create an **OAuth client ID** of type **Desktop app**.
+4. Download the JSON and save it as `credentials.json` in the project root.
+   (See `credentials.example.json` for the expected shape.)
+
+The first time you run a command, a browser window opens for you to authorize
+access; a `token.json` is then cached locally for reuse.
+
+### 3. Configure your campaign
+
+- **`nurturing_config.json`** — set `sender_name`, `company_name`, follow-up
+  timing, scoring, and automation toggles. Leave `sender_email` blank to use the
+  address of the authenticated Gmail account.
+- **`templates/`** — edit `initial.txt`, `followup_1.txt`, `followup_2.txt`, and
+  `interested.txt`. They're Jinja2 templates; any CSV column is available
+  (e.g. `{{ first_name }}`, `{{ company }}`), plus `{{ sender_name }}` and
+  `{{ company_name }}`.
+- **`contacts.csv`** — replace the sample rows with your list. A `to` column is
+  required; `first_name` and `company` are optional but used for personalization.
+
+### 4. Send your initial outreach
+
 ```bash
-# Docker deployment (recommended)
-./deploy.sh
-
-# Or manual deployment
-docker-compose up -d
+# Send the body.txt template to everyone in contacts.csv
+python send_from_csv.py contacts.csv --subject "Quick question" --body_file body.txt
 ```
 
-### 4. **Start Nurturing**
-```bash
-# Using MCP client
-python mcp_client.py start 4
+### 5. Run automated nurturing
 
-# Or direct execution
+```bash
+# One cycle: check for replies, send any due follow-ups, print a report
+python lead_nurturer.py
+
+# Or keep it running on a schedule (interval from config)
 python run_nurturing.py
 ```
 
-## 🎮 Control Commands
+## 🤖 MCP server
 
-### MCP Client Interface
+Run the agent as an MCP server so any MCP-compatible client can control it:
+
 ```bash
-# Start nurturing system (every 4 hours)
-python mcp_client.py start 4
+python mcp_server.py
+```
 
-# Check system status
+It exposes these tools:
+
+| Tool                | Description                                  |
+| ------------------- | -------------------------------------------- |
+| `start_nurturing`   | Start the background loop (`interval_hours`) |
+| `stop_nurturing`    | Stop the background loop                      |
+| `run_single_cycle`  | Run one nurturing cycle now                   |
+| `get_status`        | System status and lead statistics             |
+| `get_lead_report`   | Detailed lead report                          |
+| `update_config`     | Update `nurturing_config.json` (hot-reloaded) |
+| `send_test_email`   | Send a test email to an address               |
+| `get_logs`          | Tail recent server logs                       |
+
+A minimal CLI client is included:
+
+```bash
+python mcp_client.py start 4      # start, every 4 hours
 python mcp_client.py status
-
-# Get lead report
 python mcp_client.py report
-
-# Send test email
-python mcp_client.py test your-email@example.com
-
-# View recent logs
-python mcp_client.py logs 100
-
-# Stop the system
+python mcp_client.py test you@example.com
 python mcp_client.py stop
 ```
 
-### Direct Scripts
-```bash
-# Run single nurturing cycle
-python lead_nurturer.py
+To register the server with an MCP client (e.g. Claude Desktop), point it at
+`python /absolute/path/to/mcp_server.py`.
 
-# View lead dashboard
-python lead_dashboard.py
+## ⚙️ Configuration reference
 
-# Send emails from CSV
-python send_from_csv.py contacts.csv --body_file body.txt
-```
-
-## 📊 Current Campaign
-
-### **Dental Practice Outreach**
-- **Target**: 96 dental practices in Chicago
-- **Message**: AI lead follow-up system for dental practices
-- **Follow-up Schedule**: 3 days and 7 days after initial contact
-- **Expected Results**: 20-30% response rate, 10-15% conversion
-
-### **Email Template**
-```
-Hi {{first_name}},
-
-Did you know many dental practices lose 20–30% of new patient inquiries because follow-ups slip through the cracks?
-
-We've built an AI agent that automatically follows up with every lead via SMS/email and books them straight into your calendar.
-
-Clients typically see 5–9 extra appointments in the first 30 days.
-
-Have time for 10-min demo call this week?
-
-Thank you,
-Brandon
-Quantra Labs
-```
-
-## 🔧 Configuration
-
-### Environment Variables
-```env
-# Gmail API Configuration
-CREDENTIALS_FILE=credentials.json
-TOKEN_FILE=token.json
-
-# Nurturing Settings
-PER_MINUTE=12
-RESUME=false
-LOG_FILE=send_log.csv
-
-# MCP Server Settings
-MCP_SERVER_PORT=8000
-LOG_LEVEL=INFO
-```
-
-### Nurturing Configuration
-```json
+```jsonc
 {
-  "sender_email": "your-email@domain.com",
+  "sender_email": "",            // blank = use the authenticated Gmail account
+  "sender_name": "Your Name",
+  "company_name": "Your Company",
+  "contacts_file": "contacts.csv",
+  "templates_dir": "templates",
+  "subjects": {                  // Jinja2 subject lines per stage
+    "followup_1": "Following up, {{ first_name }}",
+    "followup_2": "One last note",
+    "interested": "Re: Great to hear from you"
+  },
   "follow_up_schedule": {
     "followup_1_days": 3,
-    "followup_2_days": 7
+    "followup_2_days": 7,
+    "max_follow_ups": 2
+  },
+  "response_keywords": {
+    "interested": ["interested", "yes", "demo", "call"],
+    "not_interested": ["not interested", "no thanks", "stop", "unsubscribe"]
+  },
+  "lead_scoring": {
+    "response_bonus": 10,
+    "interest_bonus": 5,
+    "follow_up_penalty": -1
   },
   "automation": {
     "check_responses_interval_hours": 4,
-    "auto_respond_to_interest": true
+    "auto_respond_to_interest": true,
+    "auto_send_follow_ups": true
   }
 }
 ```
 
-## 📈 Performance Metrics
+Environment variables (see `env.example`) configure `send_from_csv.py` —
+credentials/token paths, default sender, rate limiting (`PER_MINUTE`), and the
+log file.
 
-### Expected Results
-- **Response Rate**: 20-30% from initial outreach
-- **Follow-up Response**: 40-60% from follow-ups
-- **Conversion Rate**: 10-15% to interested leads
-- **Automation Coverage**: 80% of responses handled automatically
-- **Uptime**: 99.9% with Docker restart policies
+## 🚢 Deployment
 
-### Monitoring
-- Real-time lead scoring and status tracking
-- Response rate analytics and conversion metrics
-- System health monitoring and error reporting
-- Complete audit trail of all interactions
+**Docker (recommended):**
 
-## 🚀 Deployment Options
-
-### Docker (Recommended)
 ```bash
-# One-click deployment
-./deploy.sh
-
-# Manual deployment
+./deploy.sh                 # build + run with docker-compose
+# or
 docker-compose up -d
 ```
 
-### Local Development
+`docker-compose.yml` mounts your `credentials.json`, `contacts.csv`, `body.txt`,
+`templates/`, and `nurturing_config.json` into the container, so you can edit
+copy without rebuilding.
+
+**systemd:** edit the paths/user in `gmail-mcp-agent.service`, then:
+
 ```bash
-# Install dependencies
-pip install -r requirements.txt
-
-# Run nurturing system
-python run_nurturing.py
+sudo cp gmail-mcp-agent.service /etc/systemd/system/
+sudo systemctl enable --now gmail-mcp-agent
 ```
 
-### Production Server
-```bash
-# Systemd service
-sudo cp lead-nurturing.service /etc/systemd/system/
-sudo systemctl enable lead-nurturing
-sudo systemctl start lead-nurturing
-```
+## 🔒 Security & privacy
 
-## 🔒 Security & Privacy
+- OAuth2 is used for Gmail access — no passwords are stored.
+- `credentials.json`, `token.json`, `.env`, and all runtime state files are
+  git-ignored. Never commit them.
+- All data stays local; nothing is sent to third parties.
 
-- **Local Data Storage** - All data remains on your server
-- **OAuth2 Authentication** - Secure Gmail API access
-- **No External Services** - No data sent to third parties
-- **Encrypted Credentials** - Secure credential management
-- **Audit Logging** - Complete activity tracking
+## 📚 More docs
 
-## 📞 Support & Documentation
-
-- **Deployment Guide**: `DEPLOYMENT_GUIDE.md`
-- **Nurturing Guide**: `NURTURING_README.md`
-- **Debug Report**: `DEBUG_REPORT.md`
-- **Docker Setup**: `docker-compose.yml`
-
-## 🎯 Use Cases
-
-### **Sales Outreach**
-- B2B lead generation and nurturing
-- Automated follow-up sequences
-- Response tracking and lead scoring
-
-### **Marketing Campaigns**
-- Email marketing automation
-- A/B testing and optimization
-- Performance analytics
-
-### **Customer Success**
-- Onboarding email sequences
-- Renewal and upsell campaigns
-- Customer feedback collection
-
-## 📊 System Architecture
-
-```
-┌─────────────────┐    ┌──────────────────┐    ┌─────────────────┐
-│   MCP Client    │◄──►│   MCP Server     │◄──►│  Lead Nurturer  │
-│  (Control)      │    │  (24/7 Service)  │    │  (Automation)   │
-└─────────────────┘    └──────────────────┘    └─────────────────┘
-                                │
-                                ▼
-                       ┌──────────────────┐
-                       │   Gmail API      │
-                       │  (Email System)  │
-                       └──────────────────┘
-```
-
-## 🏆 Enterprise Features
-
-- **24/7 Operation** - Continuous automation
-- **Scalable Architecture** - Handle thousands of leads
-- **Professional Monitoring** - Real-time dashboards
-- **Error Recovery** - Automatic failure handling
-- **Audit Compliance** - Complete activity logging
-- **Docker Deployment** - Production-ready containerization
-
----
-
-**Ready to automate your lead nurturing?** 🚀
-
-This system is production-ready and can handle enterprise-scale email campaigns with full automation, monitoring, and 24/7 operation.
-
-## 📄 License
-
-This project is licensed under the MIT License - see the LICENSE file for details.
+- [`SETUP.md`](SETUP.md) — step-by-step setup
+- [`NURTURING_README.md`](NURTURING_README.md) — how nurturing & scoring work
+- [`DEPLOYMENT_GUIDE.md`](DEPLOYMENT_GUIDE.md) — production deployment & ops
+- [`templates/README.md`](templates/README.md) — writing email templates
 
 ## 🤝 Contributing
 
-Contributions are welcome! Please feel free to submit a Pull Request.
+Contributions are welcome — open an issue or submit a pull request.
 
-## 📧 Contact
+## 📄 License
 
-- **Author**: Brandon
-- **Company**: Quantra Labs
-- **Repository**: [GMAIL-MCP-Agent](https://github.com/brandononchain/GMAIL-MCP-Agent)
+Released under the [MIT License](LICENSE).

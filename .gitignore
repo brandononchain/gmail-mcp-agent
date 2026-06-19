@@ -3,6 +3,12 @@ credentials.json
 token.json
 .env
 
+# Runtime state & local data (generated at run time)
+lead_tracking.json
+gmail_sync_state.json
+send_log.csv
+mcp_server.log
+
 # Python
 __pycache__/
 *.py[cod]

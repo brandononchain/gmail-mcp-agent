@@ -1,172 +1,110 @@
-# 🤖 Lead Nurturing & Automation System
+# 🤖 Lead Nurturing & Automation
 
-A comprehensive system for automating lead nurturing, response tracking, and follow-up sequences for your dental practice outreach campaign.
+How the nurturing engine (`lead_nurturer.py`) works: automated follow-ups,
+response tracking, and lead scoring. It's fully config- and template-driven, so
+it carries no campaign-specific content of its own.
 
-## 🚀 Features
+## ✅ What it does
 
-### ✅ Automated Lead Nurturing
-- **Follow-up Sequences**: Automatic follow-ups at 3 days and 7 days
-- **Response Tracking**: Monitors Gmail for replies and categorizes them
-- **Lead Scoring**: Tracks engagement and interest levels
-- **Smart Responses**: Automatically responds to interested leads
-- **Incremental Gmail Sync**: Idempotent response checks with pagination and state file
+- **Follow-up sequences** — automatic follow-ups on a configurable schedule
+  (default: day 3 and day 7).
+- **Response tracking** — incremental Gmail sync detects replies, idempotently
+  (it won't reprocess the same message twice).
+- **Lead scoring** — a simple points system based on engagement.
+- **Smart responses** — optionally auto-replies to leads who sound interested.
 
-### 📊 Lead Management
-- **Status Tracking**: new → contacted → responded → interested/not_interested
-- **Response Analysis**: Parses email content for sentiment and keywords
-- **Lead Scoring**: Points system based on engagement
-- **Activity Logging**: Complete history of all interactions
+## 📊 Lead lifecycle
 
-### 🎯 Email Templates
-- **Initial Outreach**: Your main dental practice message
-- **Follow-up 1**: 3-day follow-up with engagement question
-- **Follow-up 2**: 7-day final follow-up with social proof
-- **Interest Response**: Automatic response to interested leads
+```
+new → contacted → responded → interested / not_interested
+```
 
-## 📁 Files Created
+Status and scores are persisted to `lead_tracking.json` (git-ignored) after each
+cycle, so progress survives restarts.
 
-- `lead_nurturer.py` - Main nurturing system
-- `run_nurturing.py` - Automation runner
-- `lead_dashboard.py` - Lead monitoring dashboard
-- `nurturing_config.json` - Configuration settings
-- `lead_tracking.json` - Lead data storage (auto-created)
+## 📁 Files
+
+- `lead_nurturer.py` — the nurturing engine
+- `run_nurturing.py` — standalone scheduler
+- `lead_dashboard.py` — prints a status dashboard
+- `nurturing_config.json` — configuration
+- `templates/` — the email copy it sends
+- `lead_tracking.json` — lead state (auto-created)
+- `gmail_sync_state.json` — sync cursor for response checks (auto-created)
 
 ## 🛠️ Setup
 
-1. **Install Dependencies**:
-   ```bash
-   pip install -r requirements.txt
-   ```
+```bash
+pip install -r requirements.txt
+```
 
-2. **Configure Settings**:
-   - Update `nurturing_config.json` with your email and preferences
-   - Set your sender email in the config
-
-3. **Run Initial Setup**:
-   ```bash
-   python lead_nurturer.py
-   ```
+Then set your identity and preferences in `nurturing_config.json`, and edit the
+templates in `templates/`.
 
 ## 🎮 Usage
 
-### Manual Nurturing Cycle
 ```bash
+# Run a single nurturing cycle
 python lead_nurturer.py
-```
 
-### Automated Nurturing (Every 4 Hours)
-```bash
+# Run continuously on a schedule (interval from config)
 python run_nurturing.py
-```
 
-### View Lead Dashboard
-```bash
+# View the dashboard
 python lead_dashboard.py
 ```
 
-## 📈 How It Works
+## 📈 How it works
 
-### 1. Response Monitoring
-- Incremental Gmail sync using `after:<timestamp>` and pagination
-- Maintains `gmail_sync_state.json` to avoid reprocessing messages
-- Analyzes email content (plain or HTML) for interest keywords
-- Updates lead status and scores automatically
+### 1. Response monitoring
 
-### 2. Follow-up Sequences
-- **Day 0**: Initial outreach email sent
-- **Day 3**: First follow-up with engagement question
-- **Day 7**: Final follow-up with social proof
-- **After Day 7**: Lead marked as "not_interested"
+- Incremental Gmail sync using `after:<timestamp>` plus pagination.
+- Maintains `gmail_sync_state.json` to avoid reprocessing messages.
+- Extracts the message body (prefers `text/plain`, falls back to stripped HTML).
+- Matches against your `response_keywords` to categorize the reply.
 
-### 3. Lead Scoring System
-- **+10 points**: Response received
-- **+5 points**: Interest expressed
-- **+2 points**: Any response
-- **-5 points**: Not interested
-- **-1 point**: Each follow-up sent
+### 2. Follow-up sequence
 
-### 4. Automated Responses
-- **Interested leads**: Automatic response with calendar link
-- **Not interested**: No further follow-ups
-- **Neutral responses**: Continue nurturing sequence
+- **Day 0** — initial outreach (sent via `send_from_csv.py`).
+- **Day N1** — first follow-up (`followup_1_days`, default 3).
+- **Day N2** — second/final follow-up (`followup_2_days`, default 7).
+- After the last follow-up, the lead is marked `not_interested` unless they
+  reply. All timings are configurable.
 
-## 📊 Dashboard Features
+### 3. Lead scoring
 
-The dashboard shows:
-- Total leads and tracking coverage
-- Status breakdown (new, contacted, responded, interested)
-- Response rates and statistics
-- Top leads by score
-- Recent activity timeline
+Point values come from the `lead_scoring` block in your config. Defaults:
+
+- **+10** — a response is received
+- **+5** — the response looks interested
+- **+2** — any other response
+- **-5** — the response looks not interested
+
+### 4. Automated responses
+
+- **Interested** → optional auto-reply using `templates/interested.txt`
+  (toggle with `automation.auto_respond_to_interest`).
+- **Not interested** → no further follow-ups.
+- **Neutral** → continues the nurturing sequence.
 
 ## ⚙️ Configuration
 
-Edit `nurturing_config.json` to customize and supply sender identity:
+See the [configuration reference in the README](README.md#️-configuration-reference)
+for the full schema. Key blocks: `subjects`, `follow_up_schedule`,
+`response_keywords`, `lead_scoring`, and `automation`.
 
-```json
-{
-  "sender_email": "your-email@domain.com",
-  "sender_name": "Your Name",
-  "follow_up_schedule": {
-    "followup_1_days": 3,
-    "followup_2_days": 7
-  },
-  "response_keywords": {
-    "interested": ["interested", "yes", "demo"],
-    "not_interested": ["not interested", "no thanks"]
-  },
-  "automation": {
-    "check_responses_interval_hours": 4,
-    "auto_respond_to_interest": true,
-    "auto_send_follow_ups": true
-  }
-}
-```
+## 🎯 Best practices
 
-## 🔄 Automation Schedule
-
-- **Response Checking**: Every 4 hours (configurable); incremental with idempotency
-- **Follow-up Sending**: Based on last contact date
-- **Data Saving**: After each cycle
-- **Report Generation**: After each cycle
-
-## 📱 Monitoring
-
-Run the dashboard anytime to see:
-```bash
-python lead_dashboard.py
-```
-
-## 🎯 Best Practices
-
-1. **Run Daily**: Execute the nurturing cycle at least once per day
-2. **Monitor Responses**: Check the dashboard regularly
-3. **Customize Templates**: Adjust email templates for your industry
-4. **Review Scores**: Focus on high-scoring leads
-5. **Update Keywords**: Refine response detection keywords
-
-## 🚨 Important Notes
-
-- **Gmail API Limits**: Respect Gmail's rate limits
-- **Email Authentication**: Ensure your sender email is properly configured
-- **Data Backup**: The system auto-saves to `lead_tracking.json`
-- **Privacy**: All data is stored locally
+1. Run at least once per day (or use the MCP server / scheduler).
+2. Tailor the templates and keywords to your audience.
+3. Focus your attention on high-scoring leads.
+4. Always honor unsubscribe/opt-out requests and applicable anti-spam laws.
 
 ## 🔧 Troubleshooting
 
-- **No responses detected**: Check Gmail API permissions
-- **Follow-ups not sending**: Verify sender email configuration
-- **Dashboard empty**: Run the nurturing cycle first
-- **Import errors**: Install all dependencies from requirements.txt
-
-## 📈 Expected Results
-
-With proper setup, you should see:
-- **20-30% response rate** from initial outreach
-- **40-60% response rate** from follow-ups
-- **10-15% conversion rate** to interested leads
-- **Automated handling** of 80% of responses
-
----
-
-**Ready to nurture your leads? Run `python lead_nurturer.py` to get started!** 🚀
+- **No responses detected** — check Gmail API permissions/scopes.
+- **Follow-ups not sending** — verify `sender_email` (or leave it blank to use
+  the authenticated account) and that contacts have a `last_contact` set.
+- **Dashboard empty** — run a nurturing cycle first to create
+  `lead_tracking.json`.
+- **Import errors** — install everything from `requirements.txt`.
