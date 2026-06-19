@@ -1,0 +1,12 @@
+Hi {{ first_name }},
+
+I don't want to crowd your inbox, so this will be my last note for now.
+
+[ Replace this with a brief piece of social proof or a low-friction call to
+  action, e.g. "Reply with 'demo' and I'll send a calendar link." ]
+
+No pressure either way — happy to reconnect whenever the timing is better.
+
+Best,
+{{ sender_name }}
+{{ company_name }}

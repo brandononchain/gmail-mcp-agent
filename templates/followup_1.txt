@@ -1,0 +1,11 @@
+Hi {{ first_name }},
+
+Just following up on my previous note. I know inboxes get busy, so I wanted to
+float this back to the top.
+
+[ Replace this with a short, value-focused nudge or a single open question that
+  invites a reply, e.g. "What's your biggest challenge with X right now?" ]
+
+Best,
+{{ sender_name }}
+{{ company_name }}

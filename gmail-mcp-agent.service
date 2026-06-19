@@ -1,21 +1,22 @@
 [Unit]
-Description=Lead Nurturing MCP Server
+Description=Gmail MCP Agent
 After=network.target
 Wants=network.target
 
 [Service]
 Type=simple
-User=ubuntu
-Group=ubuntu
-WorkingDirectory=/home/ubuntu/gmail_csv_sender
-ExecStart=/usr/bin/python3 /home/ubuntu/gmail_csv_sender/mcp_server.py
+# Replace USER and the WorkingDirectory/paths below to match your deployment.
+User=YOUR_USER
+Group=YOUR_USER
+WorkingDirectory=/opt/gmail-mcp-agent
+ExecStart=/usr/bin/python3 /opt/gmail-mcp-agent/mcp_server.py
 Restart=always
 RestartSec=10
 StandardOutput=journal
 StandardError=journal
 
 # Environment variables
-Environment=PYTHONPATH=/home/ubuntu/gmail_csv_sender
+Environment=PYTHONPATH=/opt/gmail-mcp-agent
 Environment=PYTHONUNBUFFERED=1
 
 # Security settings
@@ -23,7 +24,7 @@ NoNewPrivileges=true
 PrivateTmp=true
 ProtectSystem=strict
 ProtectHome=true
-ReadWritePaths=/home/ubuntu/gmail_csv_sender
+ReadWritePaths=/opt/gmail-mcp-agent
 
 [Install]
 WantedBy=multi-user.target

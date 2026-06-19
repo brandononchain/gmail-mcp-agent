@@ -1,15 +1,12 @@
-**// YOUR INITIAL OUTREACH MESSAGE GOES HERE, THIS IS SAMPLE \\**
+Hi {{ first_name }},
 
-Hi {{first_name}},
+This is the body used by send_from_csv.py for your initial outreach. It's a
+Jinja2 template, so any column in your CSV is available (e.g. {{ first_name }},
+{{ company }}).
 
-Did you know many dental practices lose 20–30% of new patient inquiries because follow-ups slip through the cracks?
+[ Replace this with one or two sentences describing the problem you solve and
+  the outcome you deliver. Keep it short and specific. ]
 
-We've built an AI agent that automatically follows up with every lead via SMS/email and books them straight into your calendar.
+Would you be open to a quick call this week?
 
-Clients typically see 5–9 extra appointments in the first 30 days.
-
-Have time for 10-min demo call this week?
-
-Thank you,
-Brandon
-Quantra Labs
+Thanks

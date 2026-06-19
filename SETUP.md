@@ -1,81 +1,83 @@
 # 🚀 Quick Setup Guide
 
-## 1. **Clone the Repository**
+## 1. Clone the repository
+
 ```bash
 git clone https://github.com/brandononchain/GMAIL-MCP-Agent.git
 cd GMAIL-MCP-Agent
 ```
 
-## 2. **Install Dependencies**
+## 2. Install dependencies
+
 ```bash
 pip install -r requirements.txt
 ```
 
-## 3. **Configure Gmail API**
+## 3. Configure Gmail API
 
-### Get Google OAuth2 Credentials:
-1. Go to [Google Cloud Console](https://console.cloud.google.com/)
-2. Create a new project or select existing one
-3. Enable Gmail API
-4. Create OAuth2 credentials (Desktop application)
-5. Download the JSON file
+### Get Google OAuth2 credentials
 
-### Setup Credentials:
+1. Go to the [Google Cloud Console](https://console.cloud.google.com/).
+2. Create a new project (or select an existing one).
+3. Enable the **Gmail API**.
+4. Create **OAuth client ID** credentials of type **Desktop app**.
+5. Download the JSON file.
+
+### Install the credentials
+
 ```bash
-# Copy your downloaded credentials file
-cp /path/to/your/credentials.json ./credentials.json
-
-# Or rename the example file and edit it
-cp credentials.json.example credentials.json
-# Edit credentials.json with your actual values
+# Save your downloaded OAuth client as credentials.json
+cp /path/to/your/downloaded.json ./credentials.json
 ```
 
-## 4. **Configure Environment**
+`credentials.example.json` shows the expected structure. The first time you run
+a command, a browser opens to authorize access and a `token.json` is cached.
+
+## 4. Configure your environment (optional)
+
 ```bash
-# Copy the example environment file
 cp env.example .env
-
-# Edit .env with your settings
-nano .env  # or use your preferred editor
+# edit .env with your preferred editor
 ```
 
-## 5. **Test the System**
-```bash
-# Test Gmail connection
-python send_from_csv.py contacts.csv --body_file body.txt
+## 5. Set up your campaign
 
-# Start the nurturing system
-python run_nurturing.py
+- Edit **`nurturing_config.json`** — set `sender_name`, `company_name`, and
+  preferences. Leave `sender_email` blank to use the authenticated account.
+- Edit the templates in **`templates/`** — `initial.txt`, `followup_1.txt`,
+  `followup_2.txt`, `interested.txt`.
+- Replace the sample rows in **`contacts.csv`** with your own list (a `to`
+  column is required).
+
+## 6. Test the system
+
+```bash
+# Send your initial outreach from the CSV
+python send_from_csv.py contacts.csv --subject "Quick question" --body_file body.txt
+
+# Run one nurturing cycle (checks replies, sends due follow-ups)
+python lead_nurturer.py
 ```
 
-## 6. **Deploy 24/7 (Optional)**
-```bash
-# Docker deployment
-./deploy.sh
+## 7. Deploy 24/7 (optional)
 
-# Or manual Docker
+```bash
+./deploy.sh            # Docker
+# or
 docker-compose up -d
 ```
 
-## 🔑 Required Files
+## 🔑 Files you provide
 
-After setup, you should have these files:
-- `credentials.json` - Your Gmail API credentials
-- `token.json` - Auto-generated OAuth token
-- `.env` - Your environment configuration
+- `credentials.json` — your Gmail API credentials (git-ignored)
+- `token.json` — auto-generated OAuth token (git-ignored)
+- `.env` — your environment configuration (git-ignored)
 
-## ⚠️ Security Notes
+## ⚠️ Security notes
 
-- **Never commit** `credentials.json`, `token.json`, or `.env` to Git
-- These files are already in `.gitignore`
-- Use `credentials.json.example` and `env.example` as templates
+- **Never commit** `credentials.json`, `token.json`, or `.env`. They're already
+  in `.gitignore`.
+- Use `credentials.example.json` and `env.example` as templates.
+- Only email people who have opted in, and honor unsubscribe requests.
 
-## 🎯 Ready to Go!
-
-Your system is now ready to:
-- Send automated emails to 96 dental practices
-- Run 24/7 lead nurturing campaigns
-- Track responses and manage follow-ups
-- Scale to thousands of leads
-
-See `README.md` for complete documentation and advanced features.
+See [`README.md`](README.md) for full documentation.

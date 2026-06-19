@@ -1,6 +1,6 @@
-# 🚀 24/7 Lead Nurturing MCP Server Deployment Guide
+# 🚀 Gmail MCP Agent — Deployment Guide
 
-This guide will help you deploy your lead nurturing system to run 24/7 using an MCP (Model Context Protocol) server.
+This guide will help you deploy the Gmail MCP Agent to run 24/7 using an MCP (Model Context Protocol) server.
 
 ## 🏗️ Architecture Overview
 
@@ -22,7 +22,8 @@ This guide will help you deploy your lead nurturing system to run 24/7 using an 
 - **Docker** and **Docker Compose** installed
 - **Gmail API credentials** (`credentials.json`)
 - **Contact list** (`contacts.csv`)
-- **Email template** (`body.txt`)
+- **Email templates** (`templates/` and `body.txt`)
+- **Configuration** (`nurturing_config.json`)
 
 ## 🚀 Quick Deployment
 
@@ -124,7 +125,9 @@ Edit `nurturing_config.json`:
 
 ```json
 {
-  "sender_email": "your-email@domain.com",
+  "sender_email": "",
+  "sender_name": "Your Name",
+  "company_name": "Your Company",
   "follow_up_schedule": {
     "followup_1_days": 3,
     "followup_2_days": 7
@@ -135,6 +138,9 @@ Edit `nurturing_config.json`:
   }
 }
 ```
+
+See the [configuration reference in the README](README.md#️-configuration-reference)
+for the full schema.
 
 ## 📊 Monitoring & Maintenance
 
@@ -162,6 +168,7 @@ Logs are automatically rotated and stored in:
 Important files to backup:
 - `lead_tracking.json` - Lead progress data
 - `nurturing_config.json` - Configuration
+- `templates/` - Your email copy
 - `credentials.json` - Gmail API credentials
 - `contacts.csv` - Your lead list
 
@@ -279,18 +286,24 @@ docker-compose up -d
 3. Test with a single cycle
 4. Check Gmail API quotas
 
-## 🎯 Expected Performance
+## 🎯 What to expect
 
-With proper setup, you should see:
+With proper setup you get:
 
-- **99.9% uptime** with Docker restart policies
-- **Automated handling** of 80% of responses
-- **20-30% response rate** from outreach
-- **10-15% conversion rate** to interested leads
-- **24/7 monitoring** and follow-ups
+- Continuous operation with Docker restart policies
+- Automated follow-ups on your configured schedule
+- Reply detection and lead scoring every cycle
+- 24/7 monitoring via the MCP server
+
+Actual response and conversion rates depend entirely on your audience, offer,
+and message quality — tune your templates and keywords accordingly.
+
+> Always email responsibly: only contact people who have opted in, honor
+> unsubscribe requests, respect Gmail's sending limits, and follow applicable
+> anti-spam laws.
 
 ---
 
-**Your lead nurturing system is now ready for 24/7 operation!** 🚀
+**Your Gmail MCP Agent is now ready for 24/7 operation.** 🚀
 
-Run `./deploy.sh` to get started, then use `python mcp_client.py status` to monitor your system.
+Run `./deploy.sh` to get started, then use `python mcp_client.py status` to monitor it.

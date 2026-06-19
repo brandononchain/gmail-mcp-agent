@@ -1,0 +1,13 @@
+Hi {{ first_name }},
+
+{# This is your first-touch outreach message. Edit it to fit your offer. #}
+I'm reaching out because I think {{ company }} could benefit from what we're building.
+
+[ Replace this paragraph with one or two sentences describing the problem you
+  solve and the outcome you deliver. Keep it short and specific. ]
+
+Would you be open to a quick 10-minute call this week?
+
+Thanks,
+{{ sender_name }}
+{{ company_name }}
