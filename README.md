@@ -1,5 +1,10 @@
 # 📬 Gmail MCP Agent
 
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+[![Python 3.11+](https://img.shields.io/badge/python-3.11%2B-blue.svg)](https://www.python.org/downloads/)
+[![MCP](https://img.shields.io/badge/Model_Context_Protocol-compatible-6E56CF.svg)](https://modelcontextprotocol.io/)
+[![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg)](#-contributing)
+
 An open-source, plug-and-play toolkit for running **personalized Gmail outreach
 and automated follow-ups** — controllable over the [Model Context
 Protocol](https://modelcontextprotocol.io/) (MCP) so you can drive it from any
@@ -15,6 +20,20 @@ baked in. Clone it, drop in your credentials, edit a few text files, and go.
 > [sending limits](https://support.google.com/a/answer/166852), and comply with
 > anti-spam laws (e.g. CAN-SPAM, GDPR, CASL) in your jurisdiction.
 
+## 📑 Contents
+
+- [Features](#-features)
+- [How it works](#-how-it-works)
+- [Project structure](#-project-structure)
+- [Quick start](#-quick-start)
+- [MCP server](#-mcp-server)
+- [Configuration reference](#️-configuration-reference)
+- [Deployment](#-deployment)
+- [Security & privacy](#-security--privacy)
+- [More docs](#-more-docs)
+- [Contributing](#-contributing)
+- [License](#-license)
+
 ## ✨ Features
 
 - **CSV-driven outreach** — send templated, personalized emails to a contact list.
@@ -24,6 +43,32 @@ baked in. Clone it, drop in your credentials, edit a few text files, and go.
 - **Auto-replies** — optionally respond to interested leads automatically.
 - **MCP server** — start/stop/monitor the agent from any MCP client.
 - **Runs anywhere** — locally, via Docker, or as a systemd service.
+
+## 🧭 How it works
+
+```
+                    ┌──────────────────┐
+   MCP client  ───► │    mcp_server    │ ──► start / stop / status / report
+ (Claude, CLI)      └────────┬─────────┘
+                             │ drives
+                             ▼
+   contacts.csv ──► ┌──────────────────┐ ──► personalized emails ──┐
+   templates/   ──► │  lead_nurturer   │                           ▼
+   config       ──► └────────┬─────────┘                    ┌────────────┐
+                             │  reads replies, scores leads  │  Gmail API │
+                             └───────────────────────────────┤  (OAuth2)  │
+                                                             └────────────┘
+```
+
+1. **Outreach** — `send_from_csv.py` sends your `body.txt` template to each row
+   in `contacts.csv`, rate-limited and logged.
+2. **Listen** — each cycle, `lead_nurturer.py` checks Gmail for replies
+   (incrementally, never reprocessing a message) and scores them against your
+   keywords.
+3. **Follow up** — leads who haven't replied get follow-ups on your schedule;
+   interested leads optionally get an auto-reply.
+4. **Control** — run it once, on a scheduler, or as an MCP server you drive from
+   any MCP client.
 
 ## 📁 Project structure
 
@@ -52,6 +97,8 @@ Files generated at runtime (git-ignored): `token.json`, `lead_tracking.json`,
 `gmail_sync_state.json`, `send_log.csv`, `mcp_server.log`.
 
 ## 🚀 Quick start
+
+**Prerequisites:** Python 3.11+, a Google account, and (optionally) Docker.
 
 ### 1. Install
 
